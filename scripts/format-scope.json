@@ -808,5 +808,17 @@
   "src/ui/imageryBoxTool.test.mjs",
   "src/ui/recentImagery.test.mjs",
   "src/layers/recentImagery/testDoubles.mjs",
-  "scripts/qa-recent-imagery.mjs"
+  "scripts/qa-recent-imagery.mjs",
+  "server/providers/localAircraft.js",
+  "src/app/layers/localAircraft.js",
+  "src/layers/localAircraft/index.js",
+  "src/layers/localAircraft/model.js",
+  "src/layers/localAircraft/rendering.js",
+  "src/layers/localAircraft/source.js",
+  "src/app/layers/localAircraft.test.mjs",
+  "src/layers/localAircraft/index.test.mjs",
+  "src/layers/localAircraft/model.test.mjs",
+  "src/layers/localAircraft/rendering.test.mjs",
+  "src/layers/localAircraft/source.test.mjs",
+  "src/tooling/localAircraftProvider.test.mjs"
 ]

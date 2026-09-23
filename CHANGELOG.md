@@ -1,5 +1,7 @@
 # Changelog
 
+- **Your own ADS-B receiver on the globe (#57).** A Movement layer, My Receiver (ADS-B), reads the `aircraft.json` your dump1090 / readsb / tar1090 already serves and draws what your antenna hears in real time, in magenta beside public Flights. Public flights render about one poll behind so their motion stays smooth, so the same aircraft shows the receiver mark slightly ahead. Set the receiver address from the layer row; it stays in this browser and never enters a share link. The server route is the first consumer of the shared tap contract (#382): it accepts only loopback, private, `localhost` and `.local` addresses, reads one fixed path, refuses redirects and cross-site pages, and bounds both the wait and the body. Contacts expire 30 s after their last position, and the row reports aircraft heard separately from aircraft drawn.
+
 - Add a **Recent Imagery** data layer (NASA GIBS · HLS + VIIRS, keyless).
   Select a box (drag, the current view, or around a pin; up to 1,000 km a
   side) and the right-rail panel lists the last 30 days of Sentinel-2 /

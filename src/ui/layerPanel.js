@@ -23,6 +23,7 @@ const PANEL_GROUPS = [
       'satellites',
       'flights',
       'military',
+      'local-aircraft',
       'ais-live-vessels',
       'traffic',
       'transit',

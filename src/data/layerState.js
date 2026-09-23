@@ -486,6 +486,13 @@ export const LAYER_STATE_REGISTRY = Object.freeze([
     disposition: 'enabled+options',
     optionOwner: 'flights',
   }),
+  // enabled-only: the receiver address lives in localStorage, never in a share
+  // link, because it is a host on the user's own network.
+  Object.freeze({
+    id: 'local-aircraft',
+    token: '2',
+    disposition: 'enabled-only',
+  }),
   Object.freeze({ id: 'local-dams', token: 'q', disposition: 'enabled-only' }),
   Object.freeze({
     id: 'local-datacenters',

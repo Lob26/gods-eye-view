@@ -118,6 +118,13 @@ test('a contact is drawn in the receiver color, heading-oriented, and never occl
     billboard.disableDepthTestDistance.getValue(now),
     Number.POSITIVE_INFINITY,
   );
+  // Same size as a Flights mark of the same class: near 3x, far 0.5x.
+  const scaler = billboard.scaleByDistance.getValue(now);
+  assert.deepEqual(
+    [scaler.near, scaler.nearValue, scaler.far, scaler.farValue],
+    [1000, 3.0, 8000000, 0.5],
+  );
+  assert.equal(billboard.scale.getValue(now), 1.0); // airliner
 });
 
 test('a response that lands after the layer is switched off is discarded', async () => {
@@ -166,7 +173,10 @@ test('heard and drawn both reach the stats row', async () => {
   const stats = layer.getStats();
   assert.equal(stats.count, 1);
   assert.equal(stats.heard, 5);
-  assert.equal(stats.countLabel, 'Heard 5 · drawing 1');
+  // On its own line: in the count column this sentence wrapped the whole
+  // row, seen in the browser check.
+  assert.equal(stats.countLabel, undefined);
+  assert.equal(layer.getRowControls().info, 'Heard 5 · drawing 1');
 });
 
 test('an unreachable receiver clears what it had drawn and reports the fault', async () => {

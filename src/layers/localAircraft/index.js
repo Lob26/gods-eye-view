@@ -1,5 +1,6 @@
 import * as Cesium from 'cesium';
 import { aircraftIcon } from '../../data/aircraftIcons.js';
+import { CLASS_SCALE_2D } from '../../data/aircraftClass.js';
 import {
   contactSpec,
   receiverSummary,
@@ -48,6 +49,11 @@ export function createLocalAircraftLayer({ source, receiverAddress } = {}) {
     throw new TypeError('Local aircraft require a snapshot source');
 
   const color = Cesium.Color.fromCssColorString(LOCAL_AIRCRAFT_COLOR_CSS);
+  // Flights' own distance scale and class sizes: the same airframe on both
+  // layers should read as the same size, differing only in colour, or the
+  // receiver's marks look like a lesser kind of contact.
+  const scaleByDistance = new Cesium.NearFarScalar(1000, 3.0, 8000000, 0.5);
+  const classScale = (kind) => CLASS_SCALE_2D[kind] ?? 1;
   /** @type {Map<string, Cesium.Entity>} icao → entity */
   const entities = new Map();
   let _viewer = null;
@@ -95,7 +101,8 @@ export function createLocalAircraftLayer({ source, receiverAddress } = {}) {
           billboard: {
             image: aircraftIcon(spec.kind),
             color,
-            scale: 0.5,
+            scale: classScale(spec.kind),
+            scaleByDistance,
             rotation: rotation ?? 0,
             alignedAxis: Cesium.Cartesian3.UNIT_Z,
             heightReference: spec.clampToGround
@@ -114,6 +121,7 @@ export function createLocalAircraftLayer({ source, receiverAddress } = {}) {
         entity.name = spec.label;
         if (rotation !== undefined) entity.billboard.rotation = rotation;
         entity.billboard.image = aircraftIcon(spec.kind);
+        entity.billboard.scale = classScale(spec.kind);
         entity.billboard.heightReference = spec.clampToGround
           ? Cesium.HeightReference.CLAMP_TO_GROUND
           : Cesium.HeightReference.NONE;
@@ -246,6 +254,11 @@ export function createLocalAircraftLayer({ source, receiverAddress } = {}) {
       }
       return {
         chips,
+        // Its own full-width line: the count column is sized for a number,
+        // and this sentence wrapped the whole row into four lines there.
+        info: _heard
+          ? receiverSummary({ heard: _heard, positioned: _positioned })
+          : undefined,
         legend: [
           {
             label: 'Your receiver',
@@ -261,9 +274,6 @@ export function createLocalAircraftLayer({ source, receiverAddress } = {}) {
     getStats() {
       return {
         count: _positioned,
-        countLabel: _heard
-          ? receiverSummary({ heard: _heard, positioned: _positioned })
-          : undefined,
         heard: _heard,
         lastUpdate: _lastUpdate,
         error: _lastError,

@@ -8,6 +8,7 @@ import {
   LOCAL_ADSB_REFERENCE_MAX_AGE_MS,
   createLocalAdsbAltitudeGate,
   gateLocalAdsbAltitude,
+  localAdsbAltitudeCeilingFt,
   localAdsbAltitudeIsPlausible,
   localAdsbFixIsPlausible,
   localAdsbPositionIsFresh,
@@ -428,4 +429,77 @@ test('a surface report is not compared with the last airborne altitude', () => {
     ]),
     { altitudes: [5_600, 0, 5_700, 5_720], rejected: 0 },
   );
+});
+
+test('only the fixed-wing weight categories A1–A5 have an altitude ceiling', () => {
+  for (const category of ['A1', 'A2', 'A3', 'A4', 'a5'])
+    assert.equal(localAdsbAltitudeCeilingFt(category), 60_000, category);
+  // High performance, rotorcraft, gliders, balloons, UAVs, space: none, and
+  // an unknown category is never assumed to have one.
+  for (const category of ['A6', 'A7', 'B1', 'B2', 'B6', 'B7', null, 'ZZ'])
+    assert.equal(localAdsbAltitudeCeilingFt(category), null, category);
+});
+
+const A3 = { category: 'A3' };
+
+test('a fixed-wing altitude above the ceiling is unknown until a real one arrives', () => {
+  // Refused on the first frame, with nothing earlier to hold. The vertical
+  // rate check alone would have drawn it at 108,800 ft for about 1.5 s.
+  assert.deepEqual(
+    gateReports([
+      [0, 108_800, A3],
+      [0.5, 35_000, A3],
+    ]),
+    { altitudes: [null, 35_000], rejected: 1 },
+  );
+});
+
+test('a feed stuck on an impossible altitude never makes it the reference', () => {
+  // Three refusals re-anchor a rate-refused altitude. One above the ceiling
+  // must not count toward that, however often the feed relays it.
+  assert.deepEqual(
+    gateReports([
+      [0, 35_000, A3],
+      [1, 108_800, A3],
+      [2, 108_800, A3],
+      [3, 108_800, A3],
+      [4, 108_800, A3],
+    ]),
+    { altitudes: [35_000, 35_000, 35_000, 35_000, 35_000], rejected: 4 },
+  );
+});
+
+test('a reference taken before the category was known is dropped once it is', () => {
+  // The identification message carrying the category often arrives seconds
+  // after the first altitude.
+  assert.deepEqual(
+    gateReports([
+      [0, 108_800],
+      [0.5, 35_000, A3],
+    ]),
+    { altitudes: [108_800, 35_000], rejected: 0 },
+  );
+});
+
+test('categories without a ceiling keep altitudes a fixed-wing aircraft could not reach', () => {
+  assert.deepEqual(
+    gateReports([
+      [0, 110_000, { category: 'B2' }],
+      [1, 110_050, { category: 'B2' }],
+    ]),
+    { altitudes: [110_000, 110_050], rejected: 0 },
+  );
+  assert.deepEqual(gateReports([[0, 51_000, A3]]), {
+    altitudes: [51_000],
+    rejected: 0,
+  });
+  // The ceiling itself is reachable; one 25 ft step above it is not.
+  assert.deepEqual(gateReports([[0, 60_000, A3]]), {
+    altitudes: [60_000],
+    rejected: 0,
+  });
+  assert.deepEqual(gateReports([[0, 60_025, A3]]), {
+    altitudes: [null],
+    rejected: 1,
+  });
 });

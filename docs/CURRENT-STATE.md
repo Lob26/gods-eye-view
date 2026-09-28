@@ -4298,8 +4298,15 @@ on purpose:
   re-reads of one record neither count twice nor let a refused value
   through. Three refusals in a row re-anchor, so a bad first altitude clears
   itself. A surface report passes unjudged, because a feed's `ground` is 0
-  and not a barometric reading. There is no absolute ceiling: balloons really
-  do fly above 100,000 ft.
+  and not a barometric reading. The fixed-wing weight categories A1–A5 also
+  have a 60,000 ft ceiling (`localAdsbAltitudeCeilingFt`), since nothing
+  certified in them flies above 51,000 ft. A report above it is refused
+  outright and never counts toward a re-anchor, so a feed that keeps relaying
+  one corrupt value cannot make it the reference. A reference accepted before
+  the category arrived is dropped once the category is known. With nothing to
+  hold, the altitude shows as unknown. A6, A7 and every B category have no
+  ceiling: gliders have soared to 76,000 ft and balloons fly above
+  100,000 ft.
 - **Trail.** A selected aircraft draws a magenta trail of the positions the
   receiver heard (up to 10 minutes / 600 fixes, dropped with the aircraft),
   with the tracked-flight trail look and a live head segment. No network

@@ -1,5 +1,14 @@
 # Changelog
 
+- Local ADS-B refuses an altitude above 60,000 ft from a fixed-wing weight
+  category (A1–A5) as soon as it arrives. Nothing certified in them flies above
+  51,000 ft. The vertical-rate check alone let a corrupt first frame show for
+  about 1.5 s, and after three refusals it would adopt a value that a decoder
+  feed kept relaying. A report above the ceiling never counts toward that
+  re-anchor. With no earlier altitude to hold, it shows as unknown.
+  High-performance aircraft, rotorcraft, gliders, balloons and UAVs have no
+  ceiling (Pedro Lobato).
+
 - The browser SDR now decodes 100 ft (Gillham, Q=0) altitudes. It decoded only
   the 25 ft form, so an aircraft whose transponder encodes altitude in 100 ft
   steps, or any aircraft above 50,175 ft, showed no altitude over WebUSB while

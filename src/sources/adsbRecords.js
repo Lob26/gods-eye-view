@@ -64,6 +64,15 @@ export const LOCAL_ADSB_UNKNOWN_VERTICAL_RATE_FPM = 12_500;
 /** Reported vertical rate is multiplied by this, plus the margin below. */
 export const LOCAL_ADSB_VERTICAL_RATE_FACTOR = 1.5;
 export const LOCAL_ADSB_VERTICAL_RATE_MARGIN_FPM = 2_000;
+/**
+ * Ceiling (ft) for the fixed-wing weight categories A1–A5. Nothing certified
+ * in them flies above 51,000 ft now that Concorde (60,000 ft) is retired, so
+ * a report above this is a corrupt frame, not an aircraft. High-performance
+ * (A6), rotorcraft (A7) and every B category are left without one: gliders
+ * have soared to 76,000 ft and balloons fly above 100,000 ft.
+ */
+export const LOCAL_ADSB_FIXED_WING_CEILING_FT = 60_000;
+const CEILING_CATEGORIES = new Set(['A1', 'A2', 'A3', 'A4', 'A5']);
 const SLOW_CATEGORIES = new Set(['A1', 'A7', 'B1', 'B4']);
 const KT_TO_MPS = 1852 / 3600;
 const EARTH_RADIUS_M = 6_371_008.8;
@@ -225,6 +234,18 @@ export function localAdsbAltitudeIsPlausible(previous, next) {
 }
 
 /**
+ * The highest altitude an emitter category can report, or null when the
+ * category has no ceiling or is not yet known.
+ * @param {unknown} category ADS-B emitter category ('A3').
+ * @returns {number|null}
+ */
+export function localAdsbAltitudeCeilingFt(category) {
+  return CEILING_CATEGORIES.has(normalizeAdsbCategory(category))
+    ? LOCAL_ADSB_FIXED_WING_CEILING_FT
+    : null;
+}
+
+/**
  * State for {@link gateLocalAdsbAltitude}, one per aircraft, owned by the
  * caller and dropped with the aircraft.
  * @returns {{accepted:object|null, judgedAt:number|null, rejectStreak:number,
@@ -244,6 +265,11 @@ export function createLocalAdsbAltitudeGate() {
  * becomes the new reference, as positions do: a bad first altitude cannot
  * freeze the aircraft at it.
  *
+ * For categories with a ceiling ({@link localAdsbAltitudeCeilingFt}) a report
+ * above it is refused outright and never re-anchors, a reference above it is
+ * dropped once the category is known, and with nothing to hold the altitude
+ * is returned as null: unknown, not impossible.
+ *
  * Only a report with a newer `lastMessageAt` is judged. The layer re-reads the
  * same record several times a second, and a re-read must neither count toward
  * a re-anchor nor slip a refused value through. A surface report passes
@@ -258,6 +284,11 @@ export function gateLocalAdsbAltitude(record, gate) {
   const altitudeFt = finiteOrNull(record?.altitudeFt);
   const at = finiteOrNull(record?.lastMessageAt);
   if (altitudeFt === null || at === null) return record;
+  const ceilingFt = localAdsbAltitudeCeilingFt(record.category);
+  const aboveCeiling = (value) => ceilingFt !== null && value > ceilingFt;
+  // The category often arrives seconds after the first altitude, so a
+  // reference accepted before it was known is dropped once it is.
+  if (aboveCeiling(gate.accepted?.altitudeFt)) gate.accepted = null;
   if (gate.judgedAt === null || at > gate.judgedAt) {
     gate.judgedAt = at;
     const candidate = {
@@ -265,7 +296,11 @@ export function gateLocalAdsbAltitude(record, gate) {
       at,
       verticalRateFpm: finiteOrNull(record.verticalRateFpm),
     };
-    if (localAdsbAltitudeIsPlausible(gate.accepted, candidate)) {
+    if (aboveCeiling(altitudeFt)) {
+      // Refused outright, and never toward a re-anchor: a feed that keeps
+      // relaying the same corrupt value must not make it the reference.
+      gate.rejected += 1;
+    } else if (localAdsbAltitudeIsPlausible(gate.accepted, candidate)) {
       gate.accepted = candidate;
       gate.rejectStreak = 0;
     } else {
@@ -278,9 +313,10 @@ export function gateLocalAdsbAltitude(record, gate) {
     }
   }
   const held = gate.accepted?.altitudeFt;
-  return Number.isFinite(held) && held !== altitudeFt
-    ? { ...record, altitudeFt: held }
-    : record;
+  if (Number.isFinite(held))
+    return held !== altitudeFt ? { ...record, altitudeFt: held } : record;
+  // Nothing accepted to hold: an impossible altitude is shown as unknown.
+  return aboveCeiling(altitudeFt) ? { ...record, altitudeFt: null } : record;
 }
 
 function normalizePosition(lat, lon) {

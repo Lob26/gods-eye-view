@@ -1,5 +1,11 @@
 # Changelog
 
+- The browser SDR now decodes 100 ft (Gillham, Q=0) altitudes. It decoded only
+  the 25 ft form, so an aircraft whose transponder encodes altitude in 100 ft
+  steps, or any aircraft above 50,175 ft, showed no altitude over WebUSB while
+  a dump1090 feed of the same antenna showed one. A code that maps to no
+  altitude still leaves the altitude unknown (Pedro Lobato).
+
 - Local ADS-B no longer draws an aircraft at an altitude it cannot have
   reached. A corrupt frame can still pass CRC, and one reached the globe as a
   DC-9 at 108,800 ft. Each altitude report must now be reachable from the last

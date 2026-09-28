@@ -4228,6 +4228,12 @@ reception does not interrupt internet radio.
 - **Gain.** AUTO (tuner AGC) or a manual R820T step from 0.0 to 49.6 dB,
   stored per mode in `gev:sdr:gain:v1`. Defaults: ADS-B 28.0 dB, FM AUTO.
   Changes apply to the open receiver without reconnecting.
+- **Altitude decoding.** Airborne positions carry either a 25 ft altitude
+  (Q=1, up to 50,175 ft) or a Gillham (Mode C) altitude in 100 ft steps
+  (Q=0, -1,200 to 126,700 ft). Q=0 is what a transponder with a 100 ft
+  encoder sends, and what anything above 50,175 ft has to send. Both are
+  decoded; a Gillham code that maps to no altitude leaves the altitude
+  unknown. All 2,048 Q=0 codes match pyModeS.
 - **Receiver stats (ADS-B).** CRC-valid messages per second, aircraft heard,
   aircraft with a fresh position and the IQ level.
 - **Devices.** An already-authorized receiver opens without the WebUSB
@@ -4280,9 +4286,8 @@ on purpose:
   applies the same check to merged feed records and reports the total as
   `rejectedPositions` in its stats). Three refusals in a row re-anchor.
 - **Altitude filter.** A corrupt frame can pass CRC, and a decoder feed can
-  relay one: a DC-9 was logged at 108,800 ft. The browser decoder cannot
-  produce that value, since it decodes only 25 ft (Q=1) altitudes and those
-  stop at 50,175 ft, so the check runs in the layer where both paths merge
+  relay one: a DC-9 was logged at 108,800 ft. The check runs in the layer,
+  where the browser decoder and the decoder feeds merge
   (`gateLocalAdsbAltitude` in `src/sources/adsbRecords.js`). Each new report
   must be reachable from the last accepted altitude at 1.5 × the larger
   reported vertical rate + 2,000 ft/min (12,500 ft/min without a rate) over

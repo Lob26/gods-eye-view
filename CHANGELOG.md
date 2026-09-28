@@ -7,7 +7,7 @@
   feed kept relaying. A report above the ceiling never counts toward that
   re-anchor. With no earlier altitude to hold, it shows as unknown.
   High-performance aircraft, rotorcraft, gliders, balloons and UAVs have no
-  ceiling (Pedro Lobato).
+  ceiling (Pedro Lobato, #803).
 
 - The browser SDR now decodes 100 ft (Gillham, Q=0) altitudes. It decoded only
   the 25 ft form, so an aircraft whose transponder encodes altitude in 100 ft
